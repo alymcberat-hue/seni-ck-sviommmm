@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Özel Bir Sürpriz</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: #121212;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1 / 1; 
+        }
+
+        .card {
+            perspective: 1000px;
+            cursor: pointer;
+            width: 100%;
+            aspect-ratio: 3 / 4; 
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 1.2s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .card-back {
+            background: repeating-linear-gradient(45deg, #2c3e50, #2c3e50 15px, #34495e 15px, #34495e 30px);
+            border: 2px solid #1a252f;
+        }
+
+        .card-front {
+            transform: rotateY(180deg);
+            background-color: #222;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1);
+            transition: filter 0.8s ease, transform 0.8s ease;
+        }
+
+        /* STANDART SANSÜR (Diğer kartlar için) */
+        .blurred {
+            filter: blur(25px) grayscale(70%);
+            transform: scale(1.15); 
+        }
+
+        /* AŞIRI SANSÜR (asil2, asil3 ve asil8 için) */
+        .extra-blurred {
+            filter: blur(45px) grayscale(85%) brightness(0.6); 
+            transform: scale(1.25); 
+        }
+
+        .center-card .card-inner {
+            transform: none !important; 
+        }
+        .center-card .card-face {
+            background-color: #800000;
+            border: 2px solid #ff4d4d;
+            box-shadow: 0 0 15px #ff4d4d;
+            animation: pulse 1.5s infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 10px #ff4d4d; }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px #ff4d4d; }
+            100% { transform: scale(0.95); box-shadow: 0 0 10px #ff4d4d; }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background-color: #222;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 20px;
+            border-radius: 20px;
+            border: 2px solid #fff;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .timer-warning {
+            color: #ff4d4d;
+            border-color: #ff4d4d;
+            animation: pulse-fast 0.5s infinite;
+        }
+
+        @keyframes pulse-fast {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .modal-image-container {
+            width: 100%;
+            height: 250px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1);
+            transition: filter 0.8s ease, transform 0.8s ease;
+        }
+
+        .modal h3 { margin: 0 0 10px 0; color: #ffca28; font-size: 16px;}
+        .modal input {
+            width: 80%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+            text-align: center;
+        }
+        .modal button {
+            padding: 12px 20px;
+            background-color: #ffca28;
+            color: #111;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        .error-text { color: #ff4d4d; font-size: 14px; display: none; margin-bottom: 10px; font-weight: bold;}
+        .success-text { color: #4CAF50; font-size: 18px; display: none; margin-bottom: 10px; font-weight: bold;}
+
+    </style>
+</head>
+<body>
+
+    <div class="grid-container" id="grid">
+        </div>
+
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <div class="timer-display" id="timerDisplay">15</div>
+            
+            <div class="modal-image-container">
+                <img id="modalImg" src="" class="modal-image" alt="Anı">
+            </div>
+            <h3 id="modalHint">İpucu buraya gelecek</h3>
+            <p id="errorMsg" class="error-text">Yanlış parola, tekrar dene!</p>
+            <p id="successMsg" class="success-text">Harika! Doğru bildin.</p>
+            
+            <input type="text" id="passwordInput" placeholder="Parolayı girin..." autocomplete="off">
+            <br>
+            <div>
+                <button id="unlockBtn" onclick="checkPassword()">Kilidi Aç</button>
+                <button onclick="closeModal()" style="background-color: #555; color: white;">Geri Dön</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Rastgele seçilecek ceza fotoğrafları havuzu
+        const cezaFotolari = [
+            "ceza1.jpg", "ceza2.jpg", "ceza3.jpg", "ceza4.jpg", "ceza5.jpg", "ceza6.jpg", "ceza7.jpg"
+        ];
+
+        // Kart Verileri - extraBlur: true olanlar o 3 özel fotoğraftır.
+        const kartBilgileri = [
+            { id: 0, ipucu: "İpucu: Babiş telefonunda kayıtlı fotoğrafta ne yiyor?", parolalar: ["portakaliş"], gercekFoto: "asil1.jpg" },
+            { id: 1, ipucu: "İpucu: İlk yakınlaştığımız yer?", parolalar: ["metroşiş"], gercekFoto: "asil2.jpg", extraBlur: true },
+            { id: 2, ipucu: "İpucu: Annemin yaptığı en sevdiğin yemekiş?", parolalar: ["içli köfteşiş"], gercekFoto: "asil3.jpg", extraBlur: true },
+            { id: 3, ipucu: "İpucu: Teyzemin evinde en sevdiğim şey?", parolalar: ["tuvalette sigaraşiş", "tuvalette sigara", "tuvalette sigara içmek", "tuvalette sigara içmeniş", "tuvalette sigara içmen", "tuvaletiş sigaraşiş"], gercekFoto: "asil4.jpg" },
+            // id: 4 (5. kart) ORTADAKİ KALP OLACAK
+            { id: 5, ipucu: "İpucu: Benim adım ne?", parolalar: ["beroş"], gercekFoto: "asil5.jpg" },
+            { id: 6, ipucu: "İpucu: İlk staja giderken Armada' da bir şey yemiştik sen çok sevinmiştin ne yedik?", parolalar: ["suşiş", "suşişiş"], gercekFoto: "asil6.jpg" },
+            { id: 7, ipucu: "İpucu: Tek olduğum stüdyonun finali ertelendiği gün sabah noluyordu?", parolalar: ["kariş yağış", "kariş", "kariş yağdı", "kariş yağdışış", "kariş yağıyordu", "kariş yağıyorduşuş"], gercekFoto: "asil7.jpg" },
+            { id: 8, ipucu: "İpucu: En sevdiğim fotoğrafı nerede çekilmiştikiş?", parolalar: ["pierde", "pierşişde", "pierdeşiş", "pier", "pieriş", "konakta", "konaktaşiş", "konakiş", "konak"], gercekFoto: "asil8.jpg", extraBlur: true }
+        ];
+
+        const grid = document.getElementById('grid');
+        let currentCardData = null; 
+        let countdownTimer = null;
+        let timeLeft = 15;
+
+        // 9 Kartı Oluşturma
+        for(let i = 0; i < 9; i++) {
+            const card = document.createElement('div');
+            
+            if (i === 4) {
+                card.className = 'card center-card';
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-face">❤️‍🔥</div>
+                    </div>
+                `;
+                card.onclick = () => alert("Final sürprizi henüz kilitli! (Fotoğrafı bekliyoruz)");
+            } else {
+                const veri = kartBilgileri.find(k => k.id === i);
+                card.className = 'card locked flipped'; 
+                card.dataset.index = i;
+                
+                // Eğer veri.extraBlur varsa 'extra-blurred' sınıfını ekle, yoksa 'blurred' ekle
+                const blurClass = veri.extraBlur ? 'extra-blurred' : 'blurred';
+                
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-face card-back"></div>
+                        <div class="card-face card-front">
+                            <img src="${veri.gercekFoto}" class="card-image ${blurClass}" id="grid-img-${i}">
+                        </div>
+                    </div>
+                `;
+                card.onclick = () => openModal(card, veri);
+            }
+            grid.appendChild(card);
+        }
+
+        function triggerFlipAnimation() {
+            const lockedCards = document.querySelectorAll('.card.locked');
+            setTimeout(() => {
+                lockedCards.forEach(card => card.classList.remove('flipped'));
+            }, 3000); 
+        }
+
+        window.onload = triggerFlipAnimation;
+
+        const modal = document.getElementById('passwordModal');
+        const passwordInput = document.getElementById('passwordInput');
+        const modalImg = document.getElementById('modalImg');
+        const modalHint = document.getElementById('modalHint');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const unlockBtn = document.getElementById('unlockBtn');
+
+        function openModal(cardElement, veri) {
+            if (cardElement.classList.contains('unlocked') || cardElement.classList.contains('failed')) {
+                return; 
+            }
+
+            currentCardData = veri;
+            modalImg.src = veri.gercekFoto;
+            modalHint.innerText = veri.ipucu;
+            
+            // Tıklanan resmin sansür seviyesini modala da uygula
+            const blurClass = veri.extraBlur ? 'extra-blurred' : 'blurred';
+            modalImg.className = `modal-image ${blurClass}`;
+            
+            passwordInput.value = '';
+            passwordInput.style.display = 'inline-block';
+            unlockBtn.style.display = 'inline-block';
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            timerDisplay.classList.remove('timer-warning');
+            
+            modal.style.display = 'flex';
+            passwordInput.focus();
+
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(countdownTimer);
+            timeLeft = 15; 
+            timerDisplay.innerText = timeLeft;
+            timerDisplay.style.display = 'inline-block';
+
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.innerText = timeLeft;
+
+                if(timeLeft <= 3) {
+                    timerDisplay.classList.add('timer-warning');
+                }
+
+                if(timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            const rastgeleCeza = cezaFotolari[Math.floor(Math.random() * cezaFotolari.length)];
+
+            modalImg.src = rastgeleCeza;
+            modalImg.classList.remove('blurred', 'extra-blurred'); // Sansürü tamamen kaldır
+            
+            errorMsg.innerText = "SÜRE BİTTİ! Yakalandın :)";
+            errorMsg.style.display = 'block';
+            
+            passwordInput.style.display = 'none';
+            unlockBtn.style.display = 'none';
+            timerDisplay.style.display = 'none';
+
+            const activeCard = document.querySelector(`.card[data-index='${currentCardData.id}']`);
+            activeCard.classList.remove('locked');
+            activeCard.classList.add('failed', 'flipped'); 
+            
+            const gridImg = document.getElementById(`grid-img-${currentCardData.id}`);
+            gridImg.src = rastgeleCeza;
+            gridImg.classList.remove('blurred', 'extra-blurred'); // Arka plandaki sansürü de kaldır
+        }
+
+        function checkPassword() {
+            if(timeLeft <= 0) return; 
+
+            const guess = passwordInput.value.toLowerCase().trim();
+            const isCorrect = currentCardData.parolalar.some(p => p === guess);
+            
+            if (isCorrect) {
+                clearInterval(countdownTimer); 
+                
+                errorMsg.style.display = 'none';
+                successMsg.style.display = 'block';
+                modalImg.classList.remove('blurred', 'extra-blurred'); // Sansürü tamamen kaldır
+                
+                passwordInput.style.display = 'none';
+                unlockBtn.style.display = 'none';
+                timerDisplay.style.display = 'none';
+                
+                const activeCard = document.querySelector(`.card[data-index='${currentCardData.id}']`);
+                activeCard.classList.remove('locked');
+                activeCard.classList.add('unlocked', 'flipped'); 
+                
+                document.getElementById(`grid-img-${currentCardData.id}`).classList.remove('blurred', 'extra-blurred');
+
+            } else {
+                errorMsg.innerText = "Yanlış parola, tekrar dene!";
+                errorMsg.style.display = 'block';
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        document.getElementById("passwordInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                checkPassword();
+            }
+        });
+
+        function closeModal() {
+            clearInterval(countdownTimer); 
+            modal.style.display = 'none';
+            
+            const lockedCards = document.querySelectorAll('.card.locked');
+            lockedCards.forEach(card => card.classList.add('flipped'));
+            
+            setTimeout(() => {
+                lockedCards.forEach(card => card.classList.remove('flipped'));
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
